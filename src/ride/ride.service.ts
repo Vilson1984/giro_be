@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Body, Injectable } from '@nestjs/common';
 import { DriverService } from '../driver/driver.service';
 import { MapsService } from '../maps/maps.service';
 
@@ -11,9 +11,9 @@ export class RideService {
 
   estimateRidePrice(data: any) {
     return {
-      Message: 'EndPoint funcionando, mas ainda não implementado',
+      message: 'endpoint funcionando',
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      data,
+      data: data,
     };
   }
 }
