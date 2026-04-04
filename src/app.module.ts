@@ -5,9 +5,17 @@ import { RideModule } from './ride/ride.module';
 import { RideController } from './ride/ride.controller';
 import { DriverService } from './driver/driver.service';
 import { RideService } from './ride/ride.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [DriverModule, MapsModule, RideModule],
+  imports: [
+    DriverModule,
+    MapsModule,
+    RideModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+  ],
   controllers: [RideController],
   providers: [DriverService, RideService],
 })

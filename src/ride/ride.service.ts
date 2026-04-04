@@ -19,8 +19,8 @@ export class RideService {
     }
 
     const route = this.mapsService.getRoute(data.origin, data.destination);
+    console.log(JSON.stringify(route, null, 2));
 
-    console.log('route ####################', route);
     return {
       message: 'endpoint funcionando',
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

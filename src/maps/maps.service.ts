@@ -3,26 +3,12 @@ import axios from 'axios';
 
 @Injectable()
 export class MapsService {
-  // viagensMock = [
-  //   {
-  //     id_corrida: 1,
-  //     distance: 10,
-  //   },
-  //   {
-  //     id_corrida: 2,
-  //     distance: 20,
-  //   },
-  //   {
-  //     id_corrida: 3,
-  //     distance: 30,
-  //   },
-  // ];
-
   async getRoute(origin: string, destination: string) {
-    const apiKey = process.env.API_KEY_ROUTE;
+    const apiKey = process.env.GOOGLE_API_KEY;
 
-    const response = axios.post(
-      'https://maps.googleapis.com/maps/api/directions/directions/v2:computeRoutes',
+    const response = await axios.post(
+      // 'https://routes.googleapis.com/maps/api/directions/v2:computeRoutes',
+      'https://routes.googleapis.com/directions/v2:computeRoutes',
       {
         origin: { address: origin },
         destination: { address: destination },
@@ -32,9 +18,13 @@ export class MapsService {
         headers: {
           'X-Goog-Api-Key': apiKey,
           'Content-Type': 'application/json',
+          'X-Goog-FieldMask': '*',
         },
       },
     );
-    return response;
+    console.log('Response from Google Maps API:', response.data);
+    console.log(JSON.stringify(response.data, null, 2));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return response.data;
   }
 }
