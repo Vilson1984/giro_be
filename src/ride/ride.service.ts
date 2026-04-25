@@ -36,6 +36,22 @@ export class RideService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const destination = route.routes[0].legs[0].endLocation.latLng;
 
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    const drivers = await this.driverService.findAll();
+    console.log('drivers:', drivers);
+
+    // eslint-disable-next-line prettier/prettier
+    const availableDrivers = drivers.filter(
+      (driver) => distanceInKm >= driver.min_km,
+    );
+    console.log('availableDrivers:', availableDrivers);
+
+    const optionsDrivers = availableDrivers.map((driver) => {
+      const price = Number  ((driver.tax_per_km * distanceInKm).toFixed(2));
+      return { driver, price };
+    });
+    console.log('optionsDrivers:', optionsDrivers);
+
     return {
       message: 'endpoint funcionando',
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -48,4 +64,17 @@ export class RideService {
       destination,
     };
   }
+
+  // async requestRide() {
+  //   // eslint-disable-next-line @typescript-eslint/await-thenable
+  //   const drivers = await this.driverService.findAll();
+  //   // Lógica para solicitar uma corrida, como selecionar um motorista disponível, calcular o preço, etc.
+  //   drivers.forEach((driver)=>{driver.min_km >= distanceInKm}
+
+  //   )
+  //   return {
+  //     message: 'Solicitação de corrida recebida',
+  //     drivers,
+  //   };
+  // }
 }
