@@ -1,7 +1,14 @@
-import { BadRequestException, Body, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DriverService } from '../driver/driver.service';
 import { MapsService } from '../maps/maps.service';
 import { RideEstimateDto } from './estimate-ride.dto';
+import { ConfirmRideDto } from '../driver/confirm-drive.dto';
 
 @Injectable()
 export class RideService {
@@ -9,6 +16,7 @@ export class RideService {
     private readonly driverService: DriverService,
     private readonly mapsService: MapsService,
   ) {}
+  private readonly rides: any[] = [];
 
   async estimateRidePrice(data: RideEstimateDto) {
     if (data.origin === data.destination) {
@@ -18,7 +26,6 @@ export class RideService {
       });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const route = await this.mapsService.getRoute(
       data.origin,
       data.destination,
@@ -36,45 +43,107 @@ export class RideService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const destination = route.routes[0].legs[0].endLocation.latLng;
 
-    // eslint-disable-next-line @typescript-eslint/await-thenable
-    const drivers = await this.driverService.findAll();
+    const drivers = this.driverService.findAll();
     console.log('drivers:', drivers);
 
-    // eslint-disable-next-line prettier/prettier
     const availableDrivers = drivers.filter(
       (driver) => distanceInKm >= driver.min_km,
     );
     console.log('availableDrivers:', availableDrivers);
 
     const optionsDrivers = availableDrivers.map((driver) => {
-      const price = Number  ((driver.tax_per_km * distanceInKm).toFixed(2));
+      const price = Number((driver.tax_per_km * distanceInKm).toFixed(2));
       return { driver, price };
     });
     console.log('optionsDrivers:', optionsDrivers);
 
     return {
-      message: 'endpoint funcionando',
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      data: route,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      origin: route.routes[0].legs[0].startLocation.latLng,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      destination: route.routes[0].legs[0].endLocation.latLng,
       distanceInKm,
       duration,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      origin,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      destination,
+      optionsDrivers,
+      // data: route,
     };
   }
 
-  // async requestRide() {
-  //   // eslint-disable-next-line @typescript-eslint/await-thenable
-  //   const drivers = await this.driverService.findAll();
-  //   // Lógica para solicitar uma corrida, como selecionar um motorista disponível, calcular o preço, etc.
-  //   drivers.forEach((driver)=>{driver.min_km >= distanceInKm}
+  confirmRide(data: ConfirmRideDto) {
+    // validações básicas
+    if (!data.customer_id) {
+      throw new BadRequestException({
+        error_code: 'INVALID_DATA',
+        error_description: 'Dados obrigatórios não informados',
+      });
+    }
 
-  //   )
-  //   return {
-  //     message: 'Solicitação de corrida recebida',
-  //     drivers,
-  //   };
-  // }
+    // buscar motorista
+    const foundDriver = this.driverService.findById(data.driver.id);
+
+    if (!foundDriver) {
+      throw new NotFoundException({
+        error_code: 'DRIVER_NOT_FOUND',
+        error_description: 'Motorista não encontrado',
+      });
+    }
+
+    // salvar (mock)
+    const ride = {
+      id: Date.now(),
+      date: new Date(),
+      customer_id: data.customer_id,
+      origin: data.origin,
+      destination: data.destination,
+      distance: data.distance,
+      duration: data.duration,
+      driver: {
+        id: foundDriver.id,
+        name: foundDriver.name,
+      },
+      value: data.value,
+    };
+
+    this.rides.push(ride);
+    return {
+      success: true,
+    };
+  }
+
+  getRides(customerId: string, driverId?: number) {
+    if (!customerId) {
+      throw new BadRequestException({
+        error_code: 'INVALID_DATA',
+        error_description: 'ID do usuário não informado',
+      });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    let rides = this.rides.filter((r) => r.customer_id === customerId);
+
+    if (driverId) {
+      const driver = this.driverService.findById(driverId);
+      if (!driver) {
+        throw new BadRequestException({
+          error_code: 'INVALID_DRIVER',
+          error_description: 'Motorista inválido',
+        });
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      rides = rides.filter((r) => r.driver.id === driverId);
+    }
+
+    if (rides.length === 0) {
+      throw new NotFoundException({
+        error_code: 'NO_RIDES_FOUND',
+        error_description: 'Nenhum registro encontrado',
+      });
+    }
+
+    return {
+      customer_id: customerId,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      rides: rides.sort((a, b) => b.date.getTime() - a.date.getTime()),
+    };
+  }
 }
